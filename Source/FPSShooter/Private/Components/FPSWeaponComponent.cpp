@@ -22,19 +22,19 @@ void UFPSWeaponComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ѕроверка кол-ва оружи€ у персонажа 
-	checkf(WeaponData.Num() == WeaponNum, TEXT("Character not items!!!"));
+	checkf(WeaponData.Num() == WeaponNum, TEXT("Character not items!!!")); 
 	CurrentWeaponIndex = 0;
 
 	SpawnWeapons();
 	InitAnimation();
 	EquipWeapon(CurrentWeaponIndex);
-	
+		
 }
 
 void UFPSWeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	CurrentWeapon = nullptr;
-	for (auto Weapon : Weapons) 
+	for (auto Weapon : Weapons)
 	{
 		Weapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 		Weapon->Destroy();
@@ -45,16 +45,17 @@ void UFPSWeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void UFPSWeaponComponent::SpawnWeapons()
 {
-	
+
 	AFPSCharacter* Character = Cast<AFPSCharacter>(GetOwner());
 	if (!Character || !GetWorld()) return;
-	
+
 	for (auto OneWeaponData : WeaponData)
 	{
 		auto Weapon = GetWorld()->SpawnActor<AFPSBaseWeapon>(OneWeaponData.WeaponClasses);
 		if (!Weapon) continue;
 
 		Weapon->OnClipEmpty.AddUObject(this, &UFPSWeaponComponent::OnEmptyClip);
+		
 		Weapon->SetOwner(Character);
 		Weapons.Add(Weapon);
 
@@ -62,9 +63,9 @@ void UFPSWeaponComponent::SpawnWeapons()
 		AttachWeaponToSocket(Weapon, Character->GetWeaponAttachmentMesh(), WeaponArmorySocketName);
 	}
 
-	
-}
 
+}
+ 
 void UFPSWeaponComponent::AttachWeaponToSocket(AFPSBaseWeapon* Weapon, USceneComponent* SceneComponent, const FName& SocketName)
 {
 	if (!Weapon || !SceneComponent) return;
@@ -75,7 +76,7 @@ void UFPSWeaponComponent::AttachWeaponToSocket(AFPSBaseWeapon* Weapon, USceneCom
 
 void UFPSWeaponComponent::EquipWeapon(int32 WeaponIndex)
 {
-	
+
 	if (WeaponIndex < 0 || WeaponIndex >= Weapons.Num())
 	{
 		return;
@@ -86,13 +87,13 @@ void UFPSWeaponComponent::EquipWeapon(int32 WeaponIndex)
 	if (CurrentWeapon)
 	{
 		CurrentWeapon->StopFire();
-		
+
 		AttachWeaponToSocket(CurrentWeapon, Character->GetWeaponAttachmentMesh(), WeaponArmorySocketName);
 	}
 
 	CurrentWeapon = Weapons[WeaponIndex];
 	const auto CurrentWeaponData = WeaponData.FindByPredicate([&](const FWeaponData& Data) {
-		return Data.WeaponClasses == CurrentWeapon->GetClass(); 
+		return Data.WeaponClasses == CurrentWeapon->GetClass();
 		});
 	CurrentReloadAnimMontage = CurrentWeaponData ? CurrentWeaponData->ReloadAnimMontage : nullptr;
 	CurrentShotAnimMontage = CurrentWeaponData ? CurrentWeaponData->ShootAnimMontage : nullptr;
@@ -101,16 +102,14 @@ void UFPSWeaponComponent::EquipWeapon(int32 WeaponIndex)
 	PlayAnimMontage(EquipAnimMontage);
 }
 
-float UFPSWeaponComponent::PlayAnimMontage(UAnimMontage* Animation)
+void UFPSWeaponComponent::PlayAnimMontage(UAnimMontage* Animation)
 {
-	float Duration = 0.0f;
 	AFPSCharacter* Character = Cast<AFPSCharacter>(GetOwner());
 	if (Character)
 	{
-		Duration = Character->GetWeaponAttachmentMesh()->AnimScriptInstance->Montage_Play(Animation);
-
+		
+		Character->GetWeaponAttachmentMesh()->AnimScriptInstance->Montage_Play(Animation);
 	}
-	return Duration;
 	
 }
 
@@ -118,45 +117,45 @@ void UFPSWeaponComponent::StopAnimMontage(UAnimMontage* Animation)
 {
 	AFPSCharacter* Character = Cast<AFPSCharacter>(GetOwner());
 	if (!Character) return;
-	
+
 	Character->GetWeaponAttachmentMesh()->AnimScriptInstance->Montage_Stop(Animation->BlendOut.GetBlendTime(), Animation);
 }
 
 void UFPSWeaponComponent::InitAnimation()
-{	
+{
 	auto EquipFinishedNotify = AnimUtils::FindNotifyByClass<UFPSEquipWeaponAnimNotify>(EquipAnimMontage);
 	if (EquipFinishedNotify)
 	{
-		
+
 		EquipFinishedNotify->OnNotified.AddUObject(this, &UFPSWeaponComponent::OnEquipFinished);
 	}
 	else
 	{
 		checkNoEntry();
 	}
-	
+
 	for (auto OneWeaponData : WeaponData)
 	{
 		auto ReloadFinishedNotify = AnimUtils::FindNotifyByClass<UFPSReloadWeaponAnimNotify>(OneWeaponData.ReloadAnimMontage);
-		if (!ReloadFinishedNotify) continue;			
+		if (!ReloadFinishedNotify) continue;
 		ReloadFinishedNotify->OnNotified.AddUObject(this, &UFPSWeaponComponent::OnReloadFinished);
-		
+
 	}
 
-	
+
 	for (auto OneWeaponData : WeaponData)
 	{
-		
+
 		auto FireFinishedNotify = AnimUtils::FindNotifyByClass<UFPSFireAnimNotify>(OneWeaponData.ShootAnimMontage);
 		if (!FireFinishedNotify) continue;
 		FireFinishedNotify->OnNotified.AddUObject(this, &UFPSWeaponComponent::OnFireFinished);
 
 	}
-	
+
 }
 
 void UFPSWeaponComponent::OnEquipFinished(USkeletalMeshComponent* MeshComp)
-{	
+{
 	AFPSCharacter* Character = Cast<AFPSCharacter>(GetOwner());
 	if (!Character || MeshComp != Character->GetWeaponAttachmentMesh()) return;
 
@@ -169,7 +168,7 @@ void UFPSWeaponComponent::OnReloadFinished(USkeletalMeshComponent* MeshComp)
 	if (!Character || MeshComp != Character->GetWeaponAttachmentMesh()) return;
 
 	ReloadAnimInProgress = false;
-	
+
 }
 
 void UFPSWeaponComponent::OnFireFinished(USkeletalMeshComponent* MeshComp)
@@ -180,15 +179,26 @@ void UFPSWeaponComponent::OnFireFinished(USkeletalMeshComponent* MeshComp)
 	FireAnimInProgress = false;
 }
 
-bool UFPSWeaponComponent::FireAnimInProg(bool InProgress)
+
+
+bool UFPSWeaponComponent::FireAnimInProg() const
 {
-	FireAnimInProgress = InProgress;
-	return InProgress;
+	return FireAnimInProgress;
 }
 
-bool UFPSWeaponComponent::CanFire() const
-{		
-	return CurrentWeapon && !EquipAnimInProgress && !ReloadAnimInProgress && !CurrentWeapon->IsAmmoEmpty();
+bool UFPSWeaponComponent::ReloadAnimInProg() const
+{
+	return ReloadAnimInProgress;
+}
+
+
+bool UFPSWeaponComponent::CanFire() const //переопределить в AIWeaponComponent
+{
+	return CurrentWeapon 
+		&& !EquipAnimInProgress 
+		&& !ReloadAnimInProgress 
+		&& !CurrentWeapon->IsAmmoEmpty() 
+		&& !CurrentWeapon->IsClipEmpty(); // в AI компоненте удалить
 }
 
 bool UFPSWeaponComponent::CanEquip() const
@@ -200,8 +210,8 @@ bool UFPSWeaponComponent::CanReload() const
 {
 	return CurrentWeapon
 		&& !EquipAnimInProgress
-		&& !ReloadAnimInProgress//
-		&&CurrentWeapon->CanReload();
+		&& !ReloadAnimInProgress
+		&& CurrentWeapon->CanReload();
 }
 
 void UFPSWeaponComponent::StartFire()
@@ -209,24 +219,23 @@ void UFPSWeaponComponent::StartFire()
 	if (!CanFire()) return;
 	FireAnimInProgress = true;
 	CurrentWeapon->StartFire();
-	PlayAnimMontage(CurrentShotAnimMontage);
 	
+	PlayAnimMontage(CurrentShotAnimMontage);
 }
 
 void UFPSWeaponComponent::StopFire()
-{	
-	
-	if (!CurrentWeapon) return;
-	
-	CurrentWeapon->StopFire();
+{
 
+	if (!CurrentWeapon) return;
+
+	CurrentWeapon->StopFire();
+	
 	StopAnimMontage(CurrentShotAnimMontage);
 	
 }
 
 bool UFPSWeaponComponent::IsFiring() const
 {
-	
 	return CurrentWeapon && CurrentWeapon->IsFiring();
 }
 
@@ -234,7 +243,7 @@ void UFPSWeaponComponent::NextWeapon()
 {
 	if (!CanEquip()) return;
 	CurrentWeaponIndex = (CurrentWeaponIndex + 1) % Weapons.Num();
-	EquipWeapon(CurrentWeaponIndex);	
+	EquipWeapon(CurrentWeaponIndex);
 }
 
 void UFPSWeaponComponent::PrevWeapon()
@@ -291,14 +300,14 @@ int32 UFPSWeaponComponent::WeaponIndexForAnim() const
 
 bool UFPSWeaponComponent::GetWeaponUIData(FWeaponUIData& UIData) const
 {
-	
+
 	if (CurrentWeapon)
 	{
 		UIData = CurrentWeapon->GetUIData();
 		return true;
 	}
 	return false;
-	
+
 }
 
 bool UFPSWeaponComponent::GetWeaponAmmoData(FAmmoData& AmmoData) const
@@ -318,7 +327,7 @@ void UFPSWeaponComponent::Reload()
 
 bool UFPSWeaponComponent::TryToAddAmmo(TSubclassOf<AFPSBaseWeapon> WeaponType, int32 ClipAmount)
 {
-	
+
 	for (const auto Weapon : Weapons)
 	{
 		if (Weapon && Weapon->IsA(WeaponType))
@@ -342,13 +351,13 @@ bool UFPSWeaponComponent::NeedAmmo(TSubclassOf<AFPSBaseWeapon> WeaponType)
 }
 
 void UFPSWeaponComponent::OnEmptyClip(AFPSBaseWeapon* AmmoEmptyWeapon)
-{	
+{
 	if (!AmmoEmptyWeapon)
 	{
 		return;
 	}
 
-	if (CurrentWeapon == AmmoEmptyWeapon || !FireAnimInProgress)
+	if (CurrentWeapon == AmmoEmptyWeapon)
 	{
 		ChangeClip();
 	}
@@ -358,7 +367,7 @@ void UFPSWeaponComponent::OnEmptyClip(AFPSBaseWeapon* AmmoEmptyWeapon)
 		{
 			if (Weapon == AmmoEmptyWeapon)
 			{
-				
+
 				Weapon->ChangeClip();
 			}
 		}
@@ -366,21 +375,21 @@ void UFPSWeaponComponent::OnEmptyClip(AFPSBaseWeapon* AmmoEmptyWeapon)
 }
 
 void UFPSWeaponComponent::ChangeClip()
-{	
+{
 	if (!CanReload()) return;
 
 	AFPSCharacter* Character = Cast<AFPSCharacter>(GetOwner());
 	if (!Character) return;
-	
+
 	Character->OnStopAiming();
-	if (FireAnimInProg(true))
-	{
-		CurrentWeapon->StopFire();
-		CurrentWeapon->ChangeClip();
-		PlayAnimMontage(CurrentReloadAnimMontage);
-		ReloadAnimInProgress = true;
-	}
+
+	CurrentWeapon->StopFire();
+	CurrentWeapon->ChangeClip();
 	
+	PlayAnimMontage(CurrentReloadAnimMontage);
+	ReloadAnimInProgress = true;
+
+
 
 }
 

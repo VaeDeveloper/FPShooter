@@ -231,7 +231,7 @@ void AFPSCharacter::OnCroundLanded(const FHitResult& Hit)
 {
 	
 	const auto FallVelocityZ = -GetCharacterMovement()->Velocity.Z;
-	//UE_LOG(LogTemp, Warning, TEXT("FallVelocity: %f"), FallVelocityZ);
+	
 
 	if (FallVelocityZ < LandedDamageVel.X) return;
 
@@ -240,7 +240,7 @@ void AFPSCharacter::OnCroundLanded(const FHitResult& Hit)
 		
 	}
 	const auto FinalDamage = FMath::GetMappedRangeValueClamped(LandedDamageVel, DamageLanded, -FallVelocityZ);
-	TakeDamage(FinalDamage, FDamageEvent{}, nullptr, nullptr);
+	TakeDamage(FinalDamage, FPointDamageEvent{}, nullptr, nullptr);
 	const auto PlayerController = Cast<AFPSPlayerController>(GetController());
 
 }
@@ -497,11 +497,12 @@ bool AFPSCharacter::IsAim() const
 
 void AFPSCharacter::OnStartAiming()
 {
-	SetAiming(true);
-	bWantsToRun = false;
-
-
-	UGameplayStatics::PlaySoundAtLocation(GetWorld(), AimSound, GetActorLocation(), GetActorRotation());
+	if (!WeaponComponent->ReloadAnimInProg())
+	{
+		SetAiming(true);
+		bWantsToRun = false;
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), AimSound, GetActorLocation(), GetActorRotation());
+	}
 }
 
 void AFPSCharacter::OnStopAiming()

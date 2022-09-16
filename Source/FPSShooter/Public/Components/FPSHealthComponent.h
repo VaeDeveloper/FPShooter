@@ -9,6 +9,7 @@
 
 class UCameraShakeBase;
 class USoundCue;
+class UPhysicalMaterial;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class FPSSHOOTER_API UFPSHealthComponent : public UActorComponent
@@ -74,8 +75,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "SoundFX")
 	USoundCue* PainSound;
 
-	
-
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Health")
+	TMap<UPhysicalMaterial*, float> DamageModifiers;
 
 
 private:
@@ -87,7 +88,16 @@ private:
 	void SetHealth(float NewHealth);
 	void SetArmor(float NewArmor);
 
+	UFUNCTION()
+	void OnTakePointDamage(AActor* DamagedActor, float Damage, 
+		class AController* InstigatedBy, FVector HitLocation, 
+		class UPrimitiveComponent* FHitComponent, FName BoneName, 
+		FVector ShotFromDirection, const class UDamageType* DamageType, AActor* DamageCauser );
 
+	UFUNCTION()
+	void OnTakeRadialDamage(AActor* DamagedActor, float Damage, 
+		const class UDamageType* DamageType, FVector Origin, 
+		FHitResult HitInfo, class AController* InstigatedBy, AActor* DamageCauser );
 
 	float Armor = 0.f;
 	
@@ -96,5 +106,10 @@ private:
 	void PlayCameraShake();
 
 	void Killed(AController* KillerController);
+
+	void ApplyDamage(float Damage, AController* InstigatedBy);
 		
+	float GetPointDamageModifier(AActor* DamagedActor, const FName& BoneName);
+
+	void ReportDamageEvent(float Damage, AController* InstigatedBy);
 };

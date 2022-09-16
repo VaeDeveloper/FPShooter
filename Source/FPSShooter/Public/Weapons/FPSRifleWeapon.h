@@ -23,6 +23,7 @@ public:
 
 	virtual void StartFire() override;
 	virtual void StopFire() override;
+	void GetDamage(float DamageInst);
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Components")

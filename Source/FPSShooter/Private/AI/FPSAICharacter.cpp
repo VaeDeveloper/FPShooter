@@ -8,7 +8,7 @@
 #include <BrainComponent.h>
 
 AFPSAICharacter::AFPSAICharacter(const FObjectInitializer& ObjInit):
-	Super(ObjInit.SetDefaultSubobjectClass<UFPSAIWeaponComponent>("WeaponComponent"))
+	Super(ObjInit.SetDefaultSubobjectClass<UFPSAIWeaponComponent>("AIWeaponComponent"))
 {
 	AutoPossessAI = EAutoPossessAI::Disabled;
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;

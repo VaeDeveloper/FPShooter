@@ -8,6 +8,8 @@
 class AFPSBaseWeapon;
 
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnClipEmptySignature, AFPSBaseWeapon*);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnLastBulletSignature, AFPSBaseWeapon*);
+
 
 
 USTRUCT(BlueprintType)

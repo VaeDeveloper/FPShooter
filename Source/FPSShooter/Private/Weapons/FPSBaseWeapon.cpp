@@ -12,6 +12,7 @@
 #include "Player/FPSCharacter.h"
 #include "Camera/CameraShakeBase.h"
 #include "NiagaraFunctionLibrary.h"
+#include "FPSUtils.h"
 
 
 
@@ -55,8 +56,6 @@ void AFPSBaseWeapon::MakeShot()
 {
 	
 }
-
-
 
 bool AFPSBaseWeapon::GetPlayerViewPoint(FVector& ViewLocation, FRotator& ViewRotation) const
 {
@@ -110,19 +109,20 @@ void AFPSBaseWeapon::MakeHit(FHitResult& HitResult, const FVector& TraceStart, c
 	GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, ECollisionChannel::ECC_Visibility, CollisionParam);
 }
 
-void AFPSBaseWeapon::DecreaseAmmo()  // функция Уменьшение арсенала 
+void AFPSBaseWeapon::DecreaseAmmo()  
 {
+	const auto WeaponComponent = FPSUtils::GetFPSPlayerComponent<UFPSWeaponComponent>(GetOwner());
 	if (CurrentAmmo.Bullets == 0) return;		
 	
 	CurrentAmmo.Bullets--;
 
-	//Debug Clips and Bullets Function --> LogAmmo();
 	
-
 	if (IsClipEmpty() && !IsAmmoEmpty())
 	{
 		StopFire();
-		OnClipEmpty.Broadcast(this);
+		WeaponComponent->StopFire();
+		//OnClipEmpty.Broadcast(this);  как добавить функцию в AI
+
 	}
 } 
 
@@ -131,15 +131,22 @@ bool AFPSBaseWeapon::CanReload() const
 	return CurrentAmmo.Bullets < DefaultAmmo.Bullets && CurrentAmmo.Clips > 0;
 }
 
-bool AFPSBaseWeapon::IsAmmoEmpty() const // возвращает истину когда весь арсенал пустой
+bool AFPSBaseWeapon::IsAmmoEmpty() const 
 {
 	return !CurrentAmmo.Infinite && CurrentAmmo.Clips == 0 && IsClipEmpty();
 }
 
-bool AFPSBaseWeapon::IsClipEmpty() const //возвращает истину когда весь арсенал пустой
+bool AFPSBaseWeapon::IsClipEmpty() const 
 {	
 	return CurrentAmmo.Bullets == 0;
-} 
+}
+
+bool AFPSBaseWeapon::IsLastBullet() const
+{
+	
+	return CurrentAmmo.Bullets < 2;
+}
+
 
 bool AFPSBaseWeapon::TryToAddAmmo(int32 ClipAmount)
 {

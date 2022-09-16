@@ -3,6 +3,7 @@
 
 #include "Components/FPSHealthComponent.h"
 #include "GameFramework/Actor.h"
+#include "GameFramework/Character.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/Controller.h"
 #include "Engine/World.h"
@@ -11,7 +12,10 @@
 #include "FPSGameModeBase.h"
 #include "Sound/SoundCue.h"
 #include "Kismet/GameplayStatics.h"
-
+#include "PhysicalMaterials/PhysicalMaterial.h"
+#include "Player/FPSCharacter.h"
+#include "AI/FPSAICharacter.h"
+#include "Perception/AISense_Damage.h"
 
 
 UFPSHealthComponent::UFPSHealthComponent()
@@ -33,22 +37,43 @@ void UFPSHealthComponent::BeginPlay()
 	if (ComponentOwner)
 	{
 		ComponentOwner->OnTakeAnyDamage.AddDynamic(this, &UFPSHealthComponent::OnTakeAnyDamage);
+		ComponentOwner->OnTakePointDamage.AddDynamic(this, &UFPSHealthComponent::OnTakePointDamage);
+		ComponentOwner->OnTakeRadialDamage.AddDynamic(this, &UFPSHealthComponent::OnTakeRadialDamage);
+
 	}
 }
 
 void UFPSHealthComponent::OnTakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
 	AController* InstigatedBy, AActor* DamageCauser)
 {
-	if (Damage <= 0.f || IsDead() ||  !GetWorld()) return;
+
+}
+
+void UFPSHealthComponent::OnTakePointDamage(AActor* DamagedActor, float Damage, AController* InstigatedBy, FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser)
+{
+	const auto FinalDamage = Damage * GetPointDamageModifier(DamagedActor, BoneName);
+	UE_LOG(LogTemp, Warning, TEXT("Damage %f, bone: %s"), Damage, *BoneName.ToString());
+	ApplyDamage(FinalDamage, InstigatedBy);
+}
+
+void UFPSHealthComponent::OnTakeRadialDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, FVector Origin, FHitResult HitInfo, AController* InstigatedBy, AActor* DamageCauser)
+{
+	ApplyDamage(Damage, InstigatedBy);
+}
+
+
+void UFPSHealthComponent::ApplyDamage(float Damage, AController* InstigatedBy)
+{
+	if (Damage <= 0.f || IsDead() || !GetWorld()) return;
 
 	Armor = FMath::Clamp(Armor - Damage, 0.f, MaxArmor);
 	OnArmorChanged.Broadcast(Armor, Armor);
 
-	
-	if(Armor <= 0.f)
+
+	if (Armor <= 0.f)
 	{
 		SetHealth(Health - Damage);
-	
+
 		GetWorld()->GetTimerManager().ClearTimer(HealTimerHandle);
 	}
 
@@ -57,16 +82,40 @@ void UFPSHealthComponent::OnTakeAnyDamage(AActor* DamagedActor, float Damage, co
 	{
 		Killed(InstigatedBy);
 		OnDeath.Broadcast();
-		
+
 	}
 	else if (AutoHeal && GetWorld())
 	{
 		GetWorld()->GetTimerManager().SetTimer(HealTimerHandle, this, &UFPSHealthComponent::HealUpdate, HealUpdateTime, true, HealDelay);
 	}
 	PlayCameraShake();
+	ReportDamageEvent(Damage, InstigatedBy);
 
 	const auto Player = Cast<APawn>(GetOwner());
 	UGameplayStatics::PlaySoundAtLocation(GetWorld(), PainSound, Player->GetActorLocation(), Player->GetActorRotation());
+}
+
+float UFPSHealthComponent::GetPointDamageModifier(AActor* DamagedActor, const FName& BoneName)
+{
+	
+	const auto Character = Cast<AFPSCharacter>(DamagedActor);
+	
+	if (!Character  ||                                                    //
+		!Character->GetWeaponAttachmentMesh() ||                          //
+		!Character->GetWeaponAttachmentMesh()->GetBodyInstance(BoneName)) //
+		return 1.0f;
+
+	const auto PhysMaterial = Character->GetWeaponAttachmentMesh()->GetBodyInstance(BoneName)->GetSimplePhysicalMaterial();
+	if (!PhysMaterial || !DamageModifiers.Contains(PhysMaterial)) return 1.0f;
+
+	return DamageModifiers[PhysMaterial];
+
+}
+
+void UFPSHealthComponent::ReportDamageEvent(float Damage, AController* InstigatedBy)
+{
+	if (!InstigatedBy || !InstigatedBy->GetPawn() || !GetOwner()) return;
+	UAISense_Damage::ReportDamageEvent(GetWorld(), GetOwner(), InstigatedBy->GetPawn(), Damage, InstigatedBy->GetPawn()->GetActorLocation(), GetOwner()->GetActorLocation());
 }
 
 void UFPSHealthComponent::HealUpdate()
@@ -96,6 +145,8 @@ void UFPSHealthComponent::SetArmor(float NewArmor)
 	OnArmorChanged.Broadcast(Armor, ArmorDelta);
 }
 
+
+
 void UFPSHealthComponent::PlayCameraShake()
 {
 	if (IsDead()) return;
@@ -121,6 +172,8 @@ void UFPSHealthComponent::Killed(AController* KillerController)
 
 	GameMode->Killed(KillerController, VictimController);
 }
+
+
 
 bool UFPSHealthComponent::TryToAddHealth(float HealthAmount)
 {

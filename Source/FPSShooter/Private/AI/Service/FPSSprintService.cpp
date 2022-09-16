@@ -25,21 +25,16 @@ void UFPSSprintService::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeM
 		const auto MovementComponent = FPSUtils::GetFPSPlayerComponent<UFPSCharacterMovementComponent>(Controller->GetPawn());
 		if (Character && MovementComponent  && Probability > 0 && FMath::FRand() <= Probability)
 		{
-			
-			
 			Character->IsMovingForward = true;
 			Character->OnStartRunning();
 		}
 		else if (WeaponComponent->IsFiring())
 		{
-			
 			Character->IsMovingForward = false;
 			Character->OnStopRunning();
 		}
 		else
-		{
-			
-				
+		{	
 			Character->IsMovingForward = false;
 			Character->OnStopRunning();
 		}

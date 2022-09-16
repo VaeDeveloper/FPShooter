@@ -36,7 +36,9 @@ public:
 	void LightningWeapon();
 
 	void SetIndexForAnim(int32 AnimWeaponIndex);
-	bool FireAnimInProg(bool InProgress);
+	bool FireAnimInProg() const;
+	bool ReloadAnimInProg() const;
+	
 
 	UFUNCTION(BlueprintCallable)
 	int32 WeaponIndexForAnim() const;
@@ -100,7 +102,7 @@ private:
 	void AttachWeaponToSocket(AFPSBaseWeapon* Weapon, USceneComponent* SceneComponent, const FName& SocketName);
 	
 
-	float PlayAnimMontage(UAnimMontage* Animation);
+	void PlayAnimMontage(UAnimMontage* Animation);
 	void StopAnimMontage(UAnimMontage* Animation);
 
 	void InitAnimation();
@@ -113,6 +115,7 @@ private:
 	
 	void ChangeClip();
 	void OnEmptyClip(AFPSBaseWeapon* AmmoEmptyWeapon);
+	void OnLastClip(AFPSBaseWeapon* AmmoLastClip);
 
 
 public:

@@ -81,7 +81,10 @@ void AFPSRailGun::MakeDamage(const FHitResult& HitResult)
 	const auto DamageActor = HitResult.GetActor();
 	if (!DamageActor) return;
 
-	DamageActor->TakeDamage(DamageAmount, FDamageEvent(), GetController(), this);
+
+	FPointDamageEvent PointDamageEvent;
+	PointDamageEvent.HitInfo = HitResult;
+	DamageActor->TakeDamage(DamageAmount, PointDamageEvent, GetController(), this);
 }
 
 

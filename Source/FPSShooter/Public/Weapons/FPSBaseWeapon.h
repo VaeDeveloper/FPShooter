@@ -27,6 +27,7 @@ public:
 	AFPSBaseWeapon();
 
 	FOnClipEmptySignature OnClipEmpty;
+	FOnLastBulletSignature OnLastBullet;
 
 	virtual void StartFire();
 	virtual void StopFire();
@@ -35,7 +36,9 @@ public:
 	void ChangeClip();
 	bool CanReload() const;
 	bool IsAmmoEmpty() const;
-	bool IsClipEmpty() const;
+	bool IsClipEmpty() const;  // Debug For AiCharacter and released mechanic for ai
+
+	bool IsLastBullet() const;
 	bool TryToAddAmmo(int32 ClipAmount);
 	void UseWeaponMesh();
 	bool IsAmmoFull() const;
